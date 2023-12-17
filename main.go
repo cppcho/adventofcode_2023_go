@@ -1,8 +1,10 @@
 package main
 
 import (
+	"log"
 	"os"
 
+	"github.com/cppcho/adventofcode_2023_go/day10"
 	"github.com/cppcho/adventofcode_2023_go/day9"
 )
 
@@ -13,10 +15,14 @@ func main() {
 		panic("invalid argument")
 	}
 
-	if args[0] == "day9" {
+	switch args[0] {
+	case "day9":
 		day9.SolvePart1()
 		day9.SolvePart2()
-	} else {
-		panic("invalid argument")
+	case "day10":
+		day10.SolvePart1()
+		day10.SolvePart2()
+	default:
+		log.Fatalf("Invalid argument: %s", args[0])
 	}
 }
