@@ -8,7 +8,7 @@ import (
 	"strings"
 )
 
-//go:embed input.txt
+//go:embed input_example2.txt
 var input string
 
 type position struct {
@@ -45,17 +45,7 @@ func getPipe(tiles [][]rune, pos position) rune {
 	return tiles[pos.row][pos.col]
 }
 
-// | is a vertical pipe connecting north and south.
-// - is a horizontal pipe connecting east and west.
-// L is a 90-degree bend connecting north and east.
-// J is a 90-degree bend connecting north and west.
-// 7 is a 90-degree bend connecting south and west.
-// F is a 90-degree bend connecting south and east.
-// . is ground; there is no pipe in this tile.
-// S is the starting position of the animal; there is a pipe on this tile, but your sketch doesn't show what shape the pipe has.
-
-func SolvePart1() {
-	tiles, start := parse()
+func getMainLoopSteps(tiles [][]rune, start position) ([][]int, int) {
 	queue := make([]movement, 0)
 
 	// Handle start position
@@ -81,7 +71,9 @@ func SolvePart1() {
 		steps[i] = make([]int, len(tiles[0]))
 	}
 
-	output := 0
+	steps[start.row][start.col] = 0
+
+	maxStep := 0
 	for len(queue) > 0 {
 		currMovement := queue[0]
 		queue = queue[1:]
@@ -90,8 +82,8 @@ func SolvePart1() {
 			continue
 		}
 		steps[currMovement.pos.row][currMovement.pos.col] = currMovement.step
-		if currMovement.step > output {
-			output = currMovement.step
+		if currMovement.step > maxStep {
+			maxStep = currMovement.step
 		}
 
 		// move to the next tile
@@ -126,10 +118,79 @@ func SolvePart1() {
 			log.Fatalf("invalid tile %c", currPipe)
 		}
 	}
+	return steps, maxStep
+}
 
-	fmt.Println(steps)
+func SolvePart1() {
+	tiles, start := parse()
+	_, output := getMainLoopSteps(tiles, start)
 	fmt.Printf("Part1: %d\n", output)
 }
 
 func SolvePart2() {
+	tiles, start := parse()
+	steps, _ := getMainLoopSteps(tiles, start)
+
+	// mark those tiles which have been searched with -1
+	steps[start.row][start.col] = -1
+
+	output := 0
+
+	for row, cols := range steps {
+		for col, colValue := range cols {
+			if colValue != 0 {
+				// skip main loop or searched
+				continue
+			}
+
+			// start bts
+			enclosed := true
+			queue := make([]position, 0)
+			queue = append(queue, position{row: row, col: col})
+			size := 0
+
+			for len(queue) > 0 {
+				// dequeue
+				curr := queue[0]
+				queue = queue[1:]
+
+				if curr.row < 0 || curr.row >= len(steps) || curr.col < 0 || curr.col >= len(cols) {
+					enclosed = false
+					continue
+				}
+
+				if steps[curr.row][curr.col] != 0 {
+					continue
+				}
+
+				steps[curr.row][curr.col] = -1
+				size++
+
+				// top
+				queue = append(queue, position{row: curr.row - 1, col: curr.col})
+				// top right
+				queue = append(queue, position{row: curr.row - 1, col: curr.col + 1})
+				// right
+				queue = append(queue, position{row: curr.row, col: curr.col + 1})
+				// bottom right
+				queue = append(queue, position{row: curr.row + 1, col: curr.col + 1})
+				// bottom
+				queue = append(queue, position{row: curr.row + 1, col: curr.col})
+				// bottom left
+				queue = append(queue, position{row: curr.row + 1, col: curr.col - 1})
+				// left
+				queue = append(queue, position{row: curr.row, col: curr.col - 1})
+				// top left
+				queue = append(queue, position{row: curr.row - 1, col: curr.col - 1})
+			}
+
+			if enclosed {
+				output += size
+			}
+		}
+	}
+
+	fmt.Println(steps)
+
+	fmt.Printf("Part2: %d\n", output)
 }
